@@ -36,7 +36,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-go-
       - name: Run linter and tests
-        run: make test-ci-no-race
+        run: make test-ci
       - name: Code Coverage
         uses: codecov/codecov-action@v3.1.1
         with:
