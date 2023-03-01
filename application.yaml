@@ -394,6 +394,7 @@ Resources:
                 Resource:
                   - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${ApplicationName}/${ApplicationStageName}*"
                   - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${ApplicationStageName}/${ApplicationName}*"
+                  - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${ApplicationDomain}*"
               - Effect: Allow
                 Action:
                   - secretsmanager:GetSecret*
