@@ -113,6 +113,7 @@ make save-dockerhub-arn \
 <br/>
 
 - `github_token` is a GitHub Personal Token for webhooks
+- `example_secret` is an example secret value that will be encrypted
 - `kms_key_id` is from the previous step (Create Environment Encryption Keys)
 
 Add or update your GitHub personal access token
