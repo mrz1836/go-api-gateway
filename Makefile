@@ -1,6 +1,3 @@
-## Set the binary name
-CUSTOM_BINARY_NAME := main
-
 # Common makefile commands & variables between projects
 include .make/common.mk
 
@@ -22,7 +19,7 @@ endif
 
 ## Application name (the name of the application, lowercase, no spaces)
 ifndef APPLICATION_NAME
-	override APPLICATION_NAME="main"
+	override APPLICATION_NAME="go-api-gateway"
 endif
 
 ## Tags for the application in AWS
@@ -62,12 +59,7 @@ endif
 
 ## Set the release folder
 ifndef RELEASES_DIR
-	override RELEASES_DIR=./releases
-endif
-
-## Package directory name
-ifndef PACKAGE_NAME
-	override PACKAGE_NAME=$(BINARY_NAME)
+	override RELEASES_DIR=./aws-sam
 endif
 
 ## Set the local environment variables when using "run"
@@ -76,31 +68,18 @@ ifndef LOCAL_ENV_FILE
 endif
 
 ## Set the Lambda Security Group
-ifndef APPLICATION_SECURITY_GROUP
-	override APPLICATION_SECURITY_GROUP="sg-0cb3239ebcff52f86"
-endif
+#ifndef APPLICATION_SECURITY_GROUP
+#	override APPLICATION_SECURITY_GROUP="sg-0cb3239ebcff52f86"
+#endif
 
 ## Set the Lambda Subnet 1 for the VPC
-ifndef APPLICATION_PRIVATE_SUBNET_1
-	override APPLICATION_PRIVATE_SUBNET_1="subnet-05d8fcf25b7bb4694"
-endif
-
-start: ## Start the application
-	@sam local start-api -t application.yaml --debug
-
-build-sam: ## Build the SAM application
-	@sam build -t application.yaml --debug
-
-# GOARCH=amd64 GOOS=linux go build main.go -ldflags="-s -w"
-
-#build: ## Build the lambda function as a compiled application
-#		@for dir in `ls cmd/functions`; do \
-#			GOOS=linux go build -o dist/handler/$$dir github.com/$(REPO_OWNER)/go-api-gateway/cmd/functions/$$dir; \
-#		done
+#ifndef APPLICATION_PRIVATE_SUBNET_1
+#	override APPLICATION_PRIVATE_SUBNET_1="subnet-05d8fcf25b7bb4694"
+#endif
 
 .PHONY: build
-build: ## Build the lambda function as a compiled application
-	@go build -o $(RELEASES_DIR)/$(PACKAGE_NAME)/$(BINARY_NAME) .
+build: ## Build the SAM application
+	@sam build -t application.yaml --debug
 
 .PHONY: clean
 clean: ## Remove previous builds, test cache, and packaged releases
@@ -111,7 +90,7 @@ clean: ## Remove previous builds, test cache, and packaged releases
 
 .PHONY: deploy
 deploy: ## Build, prepare and deploy
-	@$(MAKE) lambda
+	@$(MAKE) build
 	@$(MAKE) package
 	@SAM_CLI_TELEMETRY=0 sam deploy \
         --template-file $(TEMPLATE_PACKAGED) \
@@ -127,8 +106,6 @@ deploy: ## Build, prepare and deploy
         RepoOwner=$(REPO_OWNER) \
         RepoName=$(REPO_NAME) \
         RepoBranch=$(REPO_BRANCH) \
-        ApplicationSecurityGroup=$(APPLICATION_SECURITY_GROUP) \
-        ApplicationPrivateSubnet1=$(APPLICATION_PRIVATE_SUBNET_1) \
         EncryptionKeyId="$(shell $(MAKE) env-key-location \
 				app=$(APPLICATION_NAME) \
 				stage=$(APPLICATION_STAGE_NAME))" \
@@ -136,21 +113,6 @@ deploy: ## Build, prepare and deploy
         --tags $(AWS_TAGS) \
         --no-fail-on-empty-changeset \
         --no-confirm-changeset
-
-.PHONY: lambda
-lambda: ## Build a compiled version to deploy to Lambda
-	@$(MAKE) test
-	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 $(MAKE) build
-
-.PHONY: run
-run: ## Fires the lambda function (run event=hello_world)
-	@$(MAKE) lambda
-	@if [ "$(event)" = "" ]; then echo $(eval event += hello_world); fi
-	@SAM_CLI_TELEMETRY=0 sam local invoke ShieldFunction \
-		--force-image-build \
-		-e events/$(event).json \
-		--template $(TEMPLATE_RAW) \
-		--env-vars $(LOCAL_ENV_FILE)
 
 .PHONY: save-dockerhub-credentials
 save-dockerhub-credentials: ## Helper for saving DockerHub credentials to Secrets Manager
@@ -187,3 +149,33 @@ save-dockerhub-arn: ## Updates the ARN for the DockerHub secret
 	@test $(arn)
 	@$(info Saving DockerHub parameter...)
 	@$(MAKE) save-param param_name="/$(APPLICATION_STAGE_NAME)/$(APPLICATION_NAME)/dockerhub" param_value=$(arn)
+
+.PHONY: save-secrets
+save-secrets: ## Helper for saving application secrets to Secrets Manager (extendable for more secrets)
+	@# Example: make save-secrets github_token=12345... kms_key_id=b329... stage=<stage>
+	@test $(github_token)
+	@test $(kms_key_id)
+	@test $(example_secret)
+	@$(eval example_secret_encrypted := $(shell $(MAKE) encrypt kms_key_id=$(kms_key_id) encrypt_value="$(example_secret)"))
+	@$(eval secret_value := $(shell echo '{' \
+		'\"github_personal_token\":\"$(github_token)\"' \
+		',\"example_secret_encrypted\":\"$(example_secret_encrypted)\"' \
+		'}'))
+	@$(eval existing_secret := $(shell aws secretsmanager describe-secret --secret-id "$(APPLICATION_STAGE_NAME)/$(APPLICATION_NAME)" --output text))
+	@if [ '$(existing_secret)' = "" ]; then\
+		echo "Creating a new secret..."; \
+		$(MAKE) create-secret \
+			name="$(APPLICATION_STAGE_NAME)/$(APPLICATION_NAME)" \
+			description="Sensitive credentials for $(APPLICATION_NAME):$(APPLICATION_STAGE_NAME)" \
+			secret_value='$(secret_value)' \
+			kms_key_id=$(kms_key_id);  \
+	else\
+		echo "Updating an existing secret..."; \
+		$(MAKE) update-secret \
+            name="$(APPLICATION_STAGE_NAME)/$(APPLICATION_NAME)" \
+        	secret_value='$(secret_value)'; \
+	fi
+
+.PHONY: start
+start: ## Start the application
+	@sam local start-api --debug

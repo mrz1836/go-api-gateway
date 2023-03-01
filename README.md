@@ -1,4 +1,4 @@
-# Go & API Gateway & Lambda
+# Go : API Gateway : Lambda
 > Example using Go, API Gateway, and Lambda
 
 [![Build](https://github.com/mrz1836/go-api-gateway/workflows/run-go-tests/badge.svg?branch=master&v=2)](https://github.com/mrz1836/go-api-gateway/actions/)
@@ -31,6 +31,7 @@
 - [SAM CLI](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-install-mac.html) _(`brew tap aws/tap && brew install aws-sam-cli`)_
     - Running functions locally requires: [Docker](https://docs.docker.com/install)
 - [Golang](https://golang.org/doc/install) _(`brew install go`)_
+- [Docker](https://docker.com/) Used for running the local version of the API and functions
 - [DockerHub](https://hub.docker.com/) Used for custom Go images in CodeBuild
 
 Clone or [go get](https://golang.org/doc/articles/go_command.html) the files locally
@@ -45,9 +46,10 @@ cd $GOPATH/src/github.com/mrz1836/go-api-gateway
 
 **1)** Modify the [env vars](local-env.json)
 
-**2)** Finally, run the handler which should produce `null`
+**2)** Build and run! (runs on 127.0.0.1:3000)
 ```shell script
-make run function="<function>" payload="<payload>"
+make build;
+make start;
 ``` 
 </details>
 
@@ -74,7 +76,7 @@ The default stage is `production` if not specified.
 
 Create a `KMS Key` per `<stage>` for your application(s) to encrypt environment variables
 ```shell script
-make create-env-key stage="<stage>"
+make create-env-key stage="<stage>";
 ```
 
 This will also store the `kms_key_id` in  [SSM](https://aws.amazon.com/systems-manager/features/) located at: `/<application>/<stage>/kms_key_id` 
@@ -117,8 +119,9 @@ Add or update your GitHub personal access token
 ```shell script
 make save-secrets \
       github_token="YOUR_GITHUB_TOKEN" \
+      example_secret="YOUR_EXAMPLE_SECRET_VALUE" \
       kms_key_id="YOUR_KMS_KEY_ID" \
-      stage="<stage>"
+      stage="<stage>";
 ```
 </details>
 
@@ -129,6 +132,7 @@ make save-secrets \
 <img src=".github/IMAGES/infrastructure-diagram.png" alt="infrastructure diagram" height="400" />
 
 This will create a new [AWS CloudFormation](https://aws.amazon.com/cloudformation/) stack with:
+- (1) [API Gateway](https://aws.amazon.com/api-gateway/) RESTful API interface
 - (1) [Lambda](https://aws.amazon.com/lambda/) Function (Golang Runtime)
 - (1) [CloudWatch LogGroup](https://aws.amazon.com/cloudwatch/) for the Lambda function output
 - (1) [CodePipeline](https://aws.amazon.com/codepipeline/) with multiple stages to deploy the application from GitHub
@@ -141,27 +145,27 @@ This will create a new [AWS CloudFormation](https://aws.amazon.com/cloudformatio
 One command will build, test, package and deploy the application to AWS using the default `production` stage and using default tags. 
 After initial deployment, updating the function is as simple as committing to GitHub.
 ```shell script
-make deploy
+make deploy;
 ```
 
 _(Example)_ Customized deployment for another stage
 ```shell script
-make deploy stage="development" branch="development"
+make deploy stage="development" branch="development";
 ``` 
 
 _(Example)_ Customized deployment for a feature branch
 ```shell script
-make deploy stage="development" branch="some-feature" feature="some-feature"
+make deploy stage="development" branch="some-feature" feature="some-feature";
 ```
 
 _(Example)_ Customized S3 bucket location
 ```shell script
-make deploy bucket="some-S3-bucket-location"
+make deploy bucket="some-S3-bucket-location";
 ```
 
 _(Example)_ Customized tags for the deployment
 ```shell script
-make deploy tags="MyTag=some-value AnotherTag=some-value"
+make deploy tags="MyTag=some-value AnotherTag=some-value";
 ```  
 </details>
 
@@ -171,17 +175,17 @@ make deploy tags="MyTag=some-value AnotherTag=some-value"
 
 Remove the stack (using default stage: `production`)
 ```shell script
-make teardown
+make teardown;
 ```   
 
 _(Example)_ Teardown another stack via stage
 ```shell script
-make teardown stage="development"
+make teardown stage="development";
 ``` 
 
 _(Example)_ Teardown a feature/branch stack
 ```shell script
-make teardown stage="development" feature="some-feature"
+make teardown stage="development" feature="some-feature";
 ``` 
 </details>
 
@@ -318,3 +322,7 @@ You can also support this project by [becoming a sponsor on GitHub](https://gith
 or by making a [**bitcoin donation**](https://mrz1818.com/?tab=tips&utm_source=github&utm_medium=sponsor-link&utm_campaign=go-api-gateway&utm_term=go-api-gateway&utm_content=go-api-gateway) to ensure this journey continues indefinitely! :rocket:
 
 [![Stars](https://img.shields.io/github/stars/mrz1836/go-api-gateway?label=Please%20like%20us&style=social&v=2)](https://github.com/mrz1836/go-api-gateway/stargazers)
+
+## License
+
+[![License](https://img.shields.io/github/license/mrz1836/go-api-gateway.svg?style=flat&v=4)](LICENSE)

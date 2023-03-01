@@ -30,6 +30,30 @@ Parameters:
     MaxLength: 16
     ConstraintDescription: 'must be a valid stage name (IE: dev, staging, production)'
 
+  ApplicationBucket:
+    Type: String
+    Description: 'Pre-existing S3 bucket that will store the application files for deployment'
+    MinLength: 5
+    AllowedPattern: "[A-Za-z0-9-_]+"
+    ConstraintDescription: 'must be a valid s3 bucket location'
+
+  ApplicationBucketPrefix:
+    Type: String
+    Description: 'Prefix directory inside the bucket for the application'
+    MinLength: 1
+    AllowedPattern: "[A-Za-z0-9-_]+"
+    ConstraintDescription: 'must be a valid s3 bucket prefix'
+
+  EncryptionKeyId:
+    Type: AWS::SSM::Parameter::Value<String>
+    Description: "The ID of the KMS key used to decrypt environment variables"
+    MinLength: 5
+
+  ApplicationDockerHubArn:
+    Type: AWS::SSM::Parameter::Value<String>
+    Description: 'ARN for the DockerHub credentials'
+    MinLength: 5
+
   RepoOwner:
     Type: String
     Description: 'the repository owner or username'
@@ -90,16 +114,14 @@ Resources:
     Properties:
       FunctionName: "hello_world"
       Description: "This will say hi"
-      #CodeUri: ./cmd/functions/
-      CodeUri: ./.aws-sam/build/HelloWorldFunction/
+      CodeUri: ./cmd/functions/
       Handler:  hello_world
-      #PackageType: zip
-      #KmsKeyArn: !Sub 'arn:aws:kms:${AWS::Region}:${AWS::AccountId}:key/${EncryptionKeyId}'
-      VpcConfig:
-        SecurityGroupIds:
-          - !Ref ApplicationSecurityGroup
-        SubnetIds:
-          - !Ref ApplicationPrivateSubnet1
+      KmsKeyArn: !Sub 'arn:aws:kms:${AWS::Region}:${AWS::AccountId}:key/${EncryptionKeyId}'
+      #VpcConfig:
+        #SecurityGroupIds:
+        #  - !Ref ApplicationSecurityGroup
+        #SubnetIds:
+        #  - !Ref ApplicationPrivateSubnet1
       Policies:
         - AWSCodePipeline_ReadOnlyAccess
         - AWSLambdaBasicExecutionRole
@@ -187,7 +209,7 @@ Resources:
           Credential: !Sub "${ApplicationDockerHubArn}"
           CredentialProvider: "SECRETS_MANAGER"
         # Image: aws/codebuild/standard:5.0
-        Image: shogo82148/codebuild-golang:1.19-standard-5.0
+        Image: shogo82148/codebuild-golang:1.20-standard-5.0
         EnvironmentVariables:
           - Name: APPLICATION_NAME
             Type: PLAINTEXT
@@ -207,12 +229,12 @@ Resources:
           - Name: REPO_BRANCH
             Type: PLAINTEXT
             Value: !Ref RepoBranch
-          - Name: REDIS_CONNECTION
-            Type: PLAINTEXT
-            Value: !Ref RedisConnection
-          - Name: APPLICATION_SECURITY_GROUP
-            Type: PLAINTEXT
-            Value: !Ref ApplicationSecurityGroup
+          #- Name: REDIS_CONNECTION
+          #  Type: PLAINTEXT
+          #  Value: !Ref RedisConnection
+          #- Name: APPLICATION_SECURITY_GROUP
+          #  Type: PLAINTEXT
+          #  Value: !Ref ApplicationSecurityGroup
       Source:
         Type: CODEPIPELINE
         BuildSpec: "buildspec.yml"
@@ -451,7 +473,7 @@ Resources:
 # More info about Outputs: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/outputs-section-structure.html
 Outputs:
   HelloWorldFunction:
-    Description: 'Affected Function: HelloWorldFunction (ARN)'
+    Description: 'Function: HelloWorldFunction (ARN)'
     Value: !GetAtt HelloWorldFunction.Arn
   AutomaticDeployment:
     Description: 'CI/CD Integration'
