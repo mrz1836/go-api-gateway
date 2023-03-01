@@ -13,7 +13,7 @@ import (
 )
 
 // handler is our lambda handler invoked by the `lambda.Start` function call
-func handler(_ context.Context, r events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
+func handler(ctx context.Context, r events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 
 	// Sanity check
 	log.Println("Hello World!")
