@@ -44,8 +44,6 @@ cd $GOPATH/src/github.com/mrz1836/go-api-gateway
 <summary><strong><code>Setup to run locally</code></strong></summary>
 <br/>
 
-**1)** Modify the [env vars](local-env.json)
-
 **2)** Build and run! (runs on 127.0.0.1:3000)
 ```shell script
 make build;
@@ -203,8 +201,6 @@ View all the logs in [AWS CloudWatch](https://console.aws.amazon.com/cloudwatch/
 
 ## Documentation
 
-MrZ: todo
-
 <details>
 <summary><strong><code>Release Deployment</code></strong></summary>
 <br/>
@@ -230,7 +226,7 @@ List of all current commands:
 aws-param-certificate           Returns the ssm location for the domain ssl certificate id
 aws-param-dockerhub             Returns the ssm location for the DockerHub ARN
 aws-param-zone                  Returns the ssm location for the host zone id
-build                           Build the lambda function as a compiled application
+build                           Build the SAM application
 clean                           Remove previous builds, test cache, and packaged releases
 clean-mods                      Remove all the Go mod cache
 coverage                        Shows the test coverage
@@ -249,19 +245,19 @@ install                         Install the application
 install-go                      Install the application (Using Native Go)
 install-releaser                Install the GoReleaser application
 invalidate-cache                Invalidates a cloudfront cache based on path
-lambda                          Build a compiled version to deploy to Lambda
 lint                            Run the golangci-lint application (install if not found)
 package                         Process the CF template and prepare for deployment
 release                         Full production release (creates release in Github)
 release-snap                    Test the full release (build binaries)
 release-test                    Full production test release (everything except deploy)
 replace-version                 Replaces the version in HTML/JS (pre-deploy)
-run                             Fires the lambda function (run event=hello_world)
 save-dockerhub-arn              Updates the ARN for the DockerHub secret
 save-dockerhub-credentials      Helper for saving DockerHub credentials to Secrets Manager
 save-domain-info                Saves the zone id and the ssl id for use by CloudFormation
 save-param                      Saves a plain-text string parameter in SSM
 save-param-encrypted            Saves an encrypted string value as a parameter in SSM
+save-secrets                    Helper for saving application secrets to Secrets Manager (extendable for more secrets)
+start                           Start the application
 tag                             Generate a new tag and push (tag version=0.0.0)
 tag-remove                      Remove a tag if found (tag-remove version=0.0.0)
 tag-update                      Update an existing tag to current commit (tag-update version=0.0.0)

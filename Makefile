@@ -12,7 +12,7 @@ ifndef APPLICATION_STAGE_NAME
 	override APPLICATION_STAGE_NAME="production"
 endif
 
-## Default S3 bucket (already exists) to store distribution files
+## Default S3 bucket (already exists from: infrastructure) to store distribution files
 ifndef APPLICATION_BUCKET
 	override APPLICATION_BUCKET="mrz-cloudformation-distribution-raw-files"
 endif
@@ -62,20 +62,10 @@ ifndef RELEASES_DIR
 	override RELEASES_DIR=./aws-sam
 endif
 
-## Set the local environment variables when using "run"
-ifndef LOCAL_ENV_FILE
-	override LOCAL_ENV_FILE=local-env.json
+## Application domain name
+ifndef APPLICATION_DOMAIN_NAME
+	override APPLICATION_DOMAIN_NAME="mrz1818.com"
 endif
-
-## Set the Lambda Security Group
-#ifndef APPLICATION_SECURITY_GROUP
-#	override APPLICATION_SECURITY_GROUP="sg-0cb3239ebcff52f86"
-#endif
-
-## Set the Lambda Subnet 1 for the VPC
-#ifndef APPLICATION_PRIVATE_SUBNET_1
-#	override APPLICATION_PRIVATE_SUBNET_1="subnet-05d8fcf25b7bb4694"
-#endif
 
 .PHONY: build
 build: ## Build the SAM application
@@ -93,14 +83,19 @@ deploy: ## Build, prepare and deploy
 	@$(MAKE) build
 	@$(MAKE) package
 	@SAM_CLI_TELEMETRY=0 sam deploy \
-        --template-file $(TEMPLATE_PACKAGED) \
+        --s3-bucket "$(APPLICATION_BUCKET)" \
         --stack-name $(APPLICATION_STACK_NAME)  \
         --region $(AWS_REGION) \
         --parameter-overrides ApplicationName=$(APPLICATION_NAME) \
         ApplicationStackName=$(APPLICATION_STACK_NAME) \
         ApplicationStageName=$(APPLICATION_STAGE_NAME) \
+        ApplicationDomain=$(APPLICATION_DOMAIN_NAME) \
         ApplicationBucket=$(APPLICATION_BUCKET) \
         ApplicationBucketPrefix=$(APPLICATION_BUCKET_PREFIX) \
+		ApplicationHostedZoneId="$(shell $(MAKE) aws-param-zone \
+				domain=$(APPLICATION_DOMAIN_NAME))" \
+		ApplicationCertificateId="$(shell $(MAKE) aws-param-certificate \
+				domain=$(APPLICATION_DOMAIN_NAME))" \
         ApplicationDockerHubArn="$(shell $(MAKE) aws-param-dockerhub \
                 APPLICATION_NAME=$(APPLICATION_NAME) APPLICATION_STAGE_NAME=$(APPLICATION_STAGE_NAME))" \
         RepoOwner=$(REPO_OWNER) \

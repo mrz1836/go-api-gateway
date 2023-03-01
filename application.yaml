@@ -49,9 +49,26 @@ Parameters:
     Description: "The ID of the KMS key used to decrypt environment variables"
     MinLength: 5
 
+  ApplicationDomain:
+    Description: 'custom domain for the distribution'
+    Type: String
+    MinLength: 5
+    AllowedPattern: "[A-Za-z0-9-.]+"
+    ConstraintDescription: 'must be a valid domain name'
+
   ApplicationDockerHubArn:
     Type: AWS::SSM::Parameter::Value<String>
     Description: 'ARN for the DockerHub credentials'
+    MinLength: 5
+
+  ApplicationHostedZoneId:
+    Type: AWS::SSM::Parameter::Value<String>
+    Description: 'ID of the Route 53 hosted zone for DNS with the ApplicationDomain'
+    MinLength: 5
+
+  ApplicationCertificateId:
+    Type: AWS::SSM::Parameter::Value<String>
+    Description: 'ID of the Amazon SSL Certificate for the ApplicationDomain'
     MinLength: 5
 
   RepoOwner:
@@ -103,17 +120,25 @@ Globals:
 Resources:
 
   # https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-resource-api.html
-  MonolithAPI:
+  GoAPI:
     Type: AWS::Serverless::Api
     Properties:
-      StageName: prod #TODO: make this a variable
+      StageName: !Ref ApplicationStageName
+      # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-apigateway-domainname.html
+      # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-apigateway-basepathmapping.html#cfn-apigateway-basepathmapping-stage
+      Domain:
+        DomainName: !Sub "api.${ApplicationDomain}"
+        CertificateArn: !Sub "arn:aws:acm:${AWS::Region}:${AWS::AccountId}:certificate/${ApplicationCertificateId}"
+        EndpointConfiguration: EDGE
+        Route53:
+          HostedZoneId: !Ref ApplicationHostedZoneId
 
   # https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-resource-function.html
   HelloWorldFunction:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: "hello_world"
-      Description: "This will say hi"
+      Description: "This function will say Hello World!"
       CodeUri: ./cmd/functions/
       Handler:  hello_world
       KmsKeyArn: !Sub 'arn:aws:kms:${AWS::Region}:${AWS::AccountId}:key/${EncryptionKeyId}'
@@ -132,7 +157,7 @@ Resources:
         CatchAll:
           Type: Api
           Properties:
-            RestApiId: !Ref MonolithAPI
+            RestApiId: !Ref GoAPI
             Path: /
             Method: GET
 
@@ -472,6 +497,9 @@ Resources:
 
 # More info about Outputs: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/outputs-section-structure.html
 Outputs:
+  APIDomain:
+    Description: 'The api is now accessible via:'
+    Value: !Sub "api.${ApplicationDomainName}"
   HelloWorldFunction:
     Description: 'Function: HelloWorldFunction (ARN)'
     Value: !GetAtt HelloWorldFunction.Arn

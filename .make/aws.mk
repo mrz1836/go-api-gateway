@@ -119,7 +119,7 @@ invalidate-cache: ## Invalidates a cloudfront cache based on path
 	@aws cloudfront create-invalidation --distribution-id $(APPLICATION_DISTRIBUTION_ID) --paths "/*"
 
 package: ## Process the CF template and prepare for deployment
-	@SAM_CLI_TELEMETRY=0 sam package \
+	@SAM_CLI_TELEMETRY=0 sam package --debug \
         --template-file $(TEMPLATE_RAW)  \
         --output-template-file $(TEMPLATE_PACKAGED) \
         --s3-bucket $(APPLICATION_BUCKET) \
