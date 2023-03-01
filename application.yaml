@@ -109,12 +109,14 @@ Globals:
     MemorySize: 512
     Timeout: 10
     Runtime: go1.x
-    CodeUri: 'functions'
+    CodeUri: ./cmd/functions/
+    KmsKeyArn: !Sub 'arn:aws:kms:${AWS::Region}:${AWS::AccountId}:key/${EncryptionKeyId}'
     Architectures:
       - x86_64
     Environment:
       Variables:
         APPLICATION_STAGE_NAME: !Ref ApplicationStageName
+        EXAMPLE_SECRET: !Sub "{{resolve:secretsmanager:${ApplicationStageName}/${ApplicationName}:SecretString:example_secret_encrypted}}"
 
 # More info about Resources: https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-specification-resources-and-properties.html
 Resources:
@@ -124,6 +126,10 @@ Resources:
     Type: AWS::Serverless::Api
     Properties:
       StageName: !Ref ApplicationStageName
+      Description: 'Example using Go, AWS API Gateway and Lambda deployed via AWS SAM'
+      # https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-controlling-access-to-apis-keys.html
+      #Auth:
+      #  ApiKeyRequired: true # sets for all methods
       # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-apigateway-domainname.html
       # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-apigateway-basepathmapping.html#cfn-apigateway-basepathmapping-stage
       Domain:
@@ -139,9 +145,7 @@ Resources:
     Properties:
       FunctionName: !Sub "${ApplicationName}-hello-world"
       Description: "This function will say Hello World!"
-      CodeUri: ./cmd/functions/
       Handler:  hello_world
-      KmsKeyArn: !Sub 'arn:aws:kms:${AWS::Region}:${AWS::AccountId}:key/${EncryptionKeyId}'
       #VpcConfig:
         #SecurityGroupIds:
         #  - !Ref ApplicationSecurityGroup
@@ -160,6 +164,8 @@ Resources:
             RestApiId: !Ref GoAPI
             Path: /
             Method: GET
+            #Auth:
+            #  ApiKeyRequired: true
 
   # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-logs-loggroup.html
   HelloWorldFunctionLogGroup:
@@ -231,10 +237,10 @@ Resources:
         # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-codebuild-project-registrycredential.html
         ImagePullCredentialsType: SERVICE_ROLE
         RegistryCredential:
-          Credential: !Sub "${ApplicationDockerHubArn}"
+          Credential: !Sub "${ApplicationDockerHubArn}" # Docker credentials are needed to pull the custom image
           CredentialProvider: "SECRETS_MANAGER"
         # Image: aws/codebuild/standard:5.0
-        Image: shogo82148/codebuild-golang:1.20-standard-5.0
+        Image: shogo82148/codebuild-golang:1.20-standard-5.0 # This allows us to use new versions of Go that AWS does not support
         EnvironmentVariables:
           - Name: APPLICATION_NAME
             Type: PLAINTEXT
