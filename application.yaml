@@ -90,8 +90,8 @@ Resources:
     Properties:
       FunctionName: "hello_world"
       Description: "This will say hi"
-      CodeUri: ./cmd/functions/
-      #CodeUri: ./.aws-sam/build/HelloWorldFunction/
+      #CodeUri: ./cmd/functions/
+      CodeUri: ./.aws-sam/build/HelloWorldFunction/
       Handler:  hello_world
       #PackageType: zip
       #KmsKeyArn: !Sub 'arn:aws:kms:${AWS::Region}:${AWS::AccountId}:key/${EncryptionKeyId}'
