@@ -1,42 +1,40 @@
+// Package main is the entry point for the hello_world lambda function
 package main
 
 import (
 	"context"
 	"encoding/json"
-	"github.com/aws/aws-lambda-go/events"
-	"github.com/aws/aws-lambda-go/lambda"
-	"go-api-gateway/configuration"
+	"go-api-gateway/configuration" //nolint: gci // This is a local package
 	"log"
+	"net/http"
+
+	"github.com/aws/aws-lambda-go/events"
+	"github.com/aws/aws-lambda-go/lambda" //nolint: gci // This is a false positive
 )
 
-// Request is the request type
-type Request = events.APIGatewayProxyRequest
+// handler is our lambda handler invoked by the `lambda.Start` function call
+func handler(_ context.Context, r events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 
-// Response is the response type
-type Response = events.APIGatewayProxyResponse
-
-// setting up the services
-//var config = configuration.New()
-//var store = database.NewUserStore(config)
-//var service = service.NewUserService(store)
-
-func handler(ctx context.Context, r Request) (Response, error) {
-
+	// Sanity check
 	log.Println("Hello World!")
 
+	// Example using another package
 	log.Println(configuration.Something())
 
+	// Marshal the request
 	j, err := json.Marshal(r)
 	if err != nil {
-		return events.APIGatewayProxyResponse{Body: "Request failed", StatusCode: 400}, err
+		return events.APIGatewayProxyResponse{Body: "request failed", StatusCode: http.StatusBadRequest}, err
 	}
 
+	// Log the request data
 	log.Println(string(j))
 
 	// Response
-	return events.APIGatewayProxyResponse{Body: "Hello World!", StatusCode: 200}, nil
+	return events.APIGatewayProxyResponse{Body: "Hello World!", StatusCode: http.StatusOK}, nil
 }
 
+// main function to launch the lambda
 func main() {
 	lambda.Start(handler)
 }

@@ -131,7 +131,7 @@ make save-secrets \
 
 This will create a new [AWS CloudFormation](https://aws.amazon.com/cloudformation/) stack with:
 - (1) [API Gateway](https://aws.amazon.com/api-gateway/) RESTful API interface
-- (1) [Lambda](https://aws.amazon.com/lambda/) Function (Golang Runtime)
+- (1) [Lambda](https://aws.amazon.com/lambda/) Function(s) (Golang Runtime)
 - (1) [CloudWatch LogGroup](https://aws.amazon.com/cloudwatch/) for the Lambda function output
 - (1) [CodePipeline](https://aws.amazon.com/codepipeline/) with multiple stages to deploy the application from GitHub
 - (1) [CodePipeline Webhook](https://aws.amazon.com/codepipeline/) to receive GitHub notifications from a specific `branch:name`
