@@ -2,7 +2,7 @@
 > Example using Go, API Gateway, and Lambda
 
 [![Build](https://github.com/mrz1836/go-api-gateway/workflows/run-go-tests/badge.svg?branch=master&v=1)](https://github.com/mrz1836/go-api-gateway/actions/)
-[![Go](https://img.shields.io/badge/Go-1.19.xx-blue.svg)](https://golang.org/)
+[![Go](https://img.shields.io/badge/Go-1.20.xx-blue.svg)](https://golang.org/)
 [![codecov](https://codecov.io/gh/mrz1836/go-api-gateway/branch/master/graph/badge.svg?token=C2ZRLM49RV&v=1)](https://codecov.io/gh/mrz1836/go-api-gateway)
 [![Sponsor](https://img.shields.io/badge/sponsor-mrz1836-181717.svg?logo=github&style=flat&v=1)](https://github.com/sponsors/mrz1836)
 [![Donate](https://img.shields.io/badge/donate-bitcoin-ff9900.svg?logo=bitcoin&style=flat&v=1)](https://mrz1818.com/?tab=tips&utm_source=github&utm_medium=sponsor-link&utm_campaign=go-api-gateway&utm_term=go-api-gateway&utm_content=go-api-gateway)
@@ -281,7 +281,7 @@ vet                             Run the Go vet application
 
 ## Examples & Tests
 All unit tests run via [GitHub Actions](https://github.com/mrz1836/go-api-gateway/actions) and
-uses [Go version 1.19.x](https://golang.org/doc/go1.16). View the [configuration file](.github/workflows/run-tests.yml).
+uses [Go version 1.20.x](https://golang.org/doc/go1.20). View the [configuration file](.github/workflows/run-tests.yml).
 
 Run all tests (including integration tests)
 ```shell script
