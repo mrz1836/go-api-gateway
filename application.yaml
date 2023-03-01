@@ -137,7 +137,7 @@ Resources:
   HelloWorldFunction:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: "hello_world"
+      FunctionName: !Sub "${ApplicationName}-hello-world"
       Description: "This function will say Hello World!"
       CodeUri: ./cmd/functions/
       Handler:  hello_world
@@ -382,7 +382,7 @@ Resources:
                   - lambda:Untag*
                   - lambda:Update*
                 Resource:
-                  - !Sub "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${ApplicationStackName}"
+                  - !Sub "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${ApplicationName}-*"
               - Effect: Allow
                 Action:
                   - secretsmanager:Get*
