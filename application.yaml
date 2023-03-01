@@ -499,7 +499,7 @@ Resources:
 Outputs:
   APIDomain:
     Description: 'The api is now accessible via:'
-    Value: !Sub "api.${ApplicationDomainName}"
+    Value: !Sub "api.${ApplicationDomain}"
   HelloWorldFunction:
     Description: 'Function: HelloWorldFunction (ARN)'
     Value: !GetAtt HelloWorldFunction.Arn
