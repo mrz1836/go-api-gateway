@@ -1,6 +1,6 @@
-# Go : API Gateway : Lambda
-> Example using Go, API Gateway, and Lambda
-
+# API Gateway -> Lambda (Go)
+> Example using multiple Go functions using the same common library - with integrated CI/CD
+> 
 [![Build](https://github.com/mrz1836/go-api-gateway/workflows/run-go-tests/badge.svg?branch=master&v=1)](https://github.com/mrz1836/go-api-gateway/actions/)
 [![Go](https://img.shields.io/badge/Go-1.20.xx-blue.svg)](https://golang.org/)
 [![codecov](https://codecov.io/gh/mrz1836/go-api-gateway/branch/master/graph/badge.svg?token=C2ZRLM49RV&v=1)](https://codecov.io/gh/mrz1836/go-api-gateway)
@@ -44,7 +44,9 @@ cd $GOPATH/src/github.com/mrz1836/go-api-gateway
 <summary><strong><code>Setup to run locally</code></strong></summary>
 <br/>
 
-**2)** Build and run! (runs on 127.0.0.1:3000)
+**1)** Start docker on your computer
+
+**2)** Build and start running! (runs on 127.0.0.1:3000)
 ```shell script
 make build;
 make start;
