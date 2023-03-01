@@ -1,0 +1,458 @@
+# https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-specification-template-anatomy.html
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Example using Go, AWS API Gateway and Lambda deployed via AWS SAM
+
+# More info about Parameters: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/parameters-section-structure.html
+Parameters:
+
+  ApplicationName:
+    Description: 'used to create the name of the application in cloud formation'
+    Type: String
+    AllowedPattern: '[a-zA-Z0-9-_]*'
+    MinLength: 3
+    MaxLength: 64
+    ConstraintDescription: 'must be a valid application name'
+
+  ApplicationStackName:
+    Description: 'used to create the name of the stack in cloud formation'
+    Type: String
+    AllowedPattern: '[a-zA-Z0-9-_]*'
+    MinLength: 3
+    MaxLength: 64
+    ConstraintDescription: 'must be a valid application stack name'
+
+  ApplicationStageName:
+    Description: 'used for the de-coupling based on environment (IE: production)'
+    Type: String
+    AllowedPattern: '[a-zA-Z0-9-_]*'
+    MinLength: 1
+    MaxLength: 16
+    ConstraintDescription: 'must be a valid stage name (IE: dev, staging, production)'
+
+  RepoOwner:
+    Type: String
+    Description: 'the repository owner or username'
+    MinLength: 2
+    AllowedPattern: "[A-Za-z0-9-]+"
+    ConstraintDescription: 'must be a valid repository username'
+
+  RepoName:
+    Type: String
+    Description: 'the repository name'
+    MinLength: 1
+    AllowedPattern: "[A-Za-z0-9-_]+"
+    ConstraintDescription: 'must be a valid repository name'
+
+  RepoBranch:
+    Type: String
+    Description: 'the repository branch that will trigger automatic deployments'
+    MinLength: 1
+    AllowedPattern: "[A-Za-z0-9-_/]+"
+    ConstraintDescription: 'must be a valid branch name'
+
+# More info about MetaData: https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-template-publishing-applications-metadata-properties.html
+Metadata:
+  AWS::ServerlessRepo::Application:
+    Name: !Ref ApplicationStackName
+    Description: 'Example using Go, AWS API Gateway and Lambda deployed via AWS SAM'
+    Author: MrZ
+    Labels: ['lambda','gateway','api','go','golang','sam','serverless','example']
+    HomePageUrl: !Sub 'https://github.com/${RepoOwner}/${RepoName}'
+    SemanticVersion: '0.0.1'
+    SourceCodeUrl: !Sub 'https://github.com/${RepoOwner}/${RepoName}'
+
+# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
+Globals:
+  Function:
+    MemorySize: 512
+    Timeout: 10
+    Runtime: go1.x
+    CodeUri: 'functions'
+    Architectures:
+      - x86_64
+    Environment:
+      Variables:
+        APPLICATION_STAGE_NAME: !Ref ApplicationStageName
+
+# More info about Resources: https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-specification-resources-and-properties.html
+Resources:
+
+  # https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-resource-api.html
+  MonolithAPI:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: prod #TODO: make this a variable
+
+  # https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-resource-function.html
+  HelloWorldFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: "hello_world"
+      Description: "This will say hi"
+      CodeUri: ./cmd/functions/
+      #CodeUri: ./.aws-sam/build/HelloWorldFunction/
+      Handler:  hello_world
+      #PackageType: zip
+      #KmsKeyArn: !Sub 'arn:aws:kms:${AWS::Region}:${AWS::AccountId}:key/${EncryptionKeyId}'
+      VpcConfig:
+        SecurityGroupIds:
+          - !Ref ApplicationSecurityGroup
+        SubnetIds:
+          - !Ref ApplicationPrivateSubnet1
+      Policies:
+        - AWSCodePipeline_ReadOnlyAccess
+        - AWSLambdaBasicExecutionRole
+        - AWSLambdaVPCAccessExecutionRole
+        - KMSDecryptPolicy:
+            KeyId: !Ref EncryptionKeyId
+      Events:
+        CatchAll:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MonolithAPI
+            Path: /
+            Method: GET
+
+  # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-logs-loggroup.html
+  HelloWorldFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub '/aws/lambda/${HelloWorldFunction}'
+      RetentionInDays: 90
+
+  # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-codepipeline-pipeline.html
+  CodePipeline:
+    Type: AWS::CodePipeline::Pipeline
+    DependsOn:
+      - CodeBuildProject
+      - CodeBuildRole
+      - CodePipelineRole
+    Properties:
+      Name: !Sub "${ApplicationStackName}-deployment"
+      ArtifactStore:
+        Type: S3
+        Location: !Ref ApplicationBucket
+      RestartExecutionOnUpdate: false
+      RoleArn: !GetAtt CodePipelineRole.Arn
+      # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-codepipeline-pipeline-stages.html
+      Stages:
+        - Name: Source
+          Actions:
+            - Name: Source-From-Github
+              InputArtifacts: []
+              RunOrder: 1
+              ActionTypeId:
+                Category: Source
+                Owner: ThirdParty
+                Version: 1
+                Provider: GitHub
+              OutputArtifacts:
+                - Name: SourceCode
+              Configuration:
+                Owner: !Ref RepoOwner
+                Repo: !Ref RepoName
+                Branch: !Ref RepoBranch
+                PollForSourceChanges: false
+                OAuthToken: !Sub "{{resolve:secretsmanager:${ApplicationStageName}/${ApplicationName}:SecretString:github_personal_token}}"
+        - Name: Build
+          Actions:
+            - Name: Build-and-Deploy-Stack
+              RunOrder: 3
+              InputArtifacts:
+                - Name: SourceCode
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Version: 1
+                Provider: CodeBuild
+              Configuration:
+                ProjectName:
+                  Ref: CodeBuildProject
+
+  # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-codebuild-project.html
+  CodeBuildProject:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: !Sub "${ApplicationStackName}-build-deploy"
+      ServiceRole: !Ref CodeBuildRole
+      Artifacts:
+        Type: CODEPIPELINE
+      Environment:
+        Type: LINUX_CONTAINER
+        ComputeType: BUILD_GENERAL1_SMALL
+        # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-codebuild-project-registrycredential.html
+        ImagePullCredentialsType: SERVICE_ROLE
+        RegistryCredential:
+          Credential: !Sub "${ApplicationDockerHubArn}"
+          CredentialProvider: "SECRETS_MANAGER"
+        # Image: aws/codebuild/standard:5.0
+        Image: shogo82148/codebuild-golang:1.19-standard-5.0
+        EnvironmentVariables:
+          - Name: APPLICATION_NAME
+            Type: PLAINTEXT
+            Value: !Ref ApplicationName
+          - Name: APPLICATION_STACK_NAME
+            Type: PLAINTEXT
+            Value: !Ref ApplicationStackName
+          - Name: APPLICATION_BUCKET
+            Type: PLAINTEXT
+            Value: !Ref ApplicationBucket
+          - Name: APPLICATION_BUCKET_PREFIX
+            Type: PLAINTEXT
+            Value: !Ref ApplicationBucketPrefix
+          - Name: APPLICATION_STAGE_NAME
+            Type: PLAINTEXT
+            Value: !Ref ApplicationStageName
+          - Name: REPO_BRANCH
+            Type: PLAINTEXT
+            Value: !Ref RepoBranch
+          - Name: REDIS_CONNECTION
+            Type: PLAINTEXT
+            Value: !Ref RedisConnection
+          - Name: APPLICATION_SECURITY_GROUP
+            Type: PLAINTEXT
+            Value: !Ref ApplicationSecurityGroup
+      Source:
+        Type: CODEPIPELINE
+        BuildSpec: "buildspec.yml"
+      TimeoutInMinutes: 15
+      QueuedTimeoutInMinutes: 60
+
+  # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-codepipeline-webhook.html
+  GithubWebhook:
+    Type: AWS::CodePipeline::Webhook
+    DependsOn:
+      - CodePipeline
+    Properties:
+      Authentication: GITHUB_HMAC
+      AuthenticationConfiguration:
+        SecretToken: !Sub "{{resolve:secretsmanager:${ApplicationStageName}/${ApplicationName}:SecretString:github_personal_token}}"
+      RegisterWithThirdParty: 'true'
+      Filters:
+        - JsonPath: "$.ref"
+          MatchEquals: refs/heads/{Branch}
+      TargetPipeline: !Ref CodePipeline
+      TargetAction: Source-From-Github
+      TargetPipelineVersion: !GetAtt CodePipeline.Version
+
+  # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-iam-role.html
+  CodeBuildRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Description: "This role is for the CodeBuild resource for CodeProjects"
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - cloudformation.amazonaws.com
+                - codebuild.amazonaws.com
+                - kms.amazonaws.com
+                - lambda.amazonaws.com
+                - logs.amazonaws.com
+                - events.amazonaws.com
+                - s3.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Policies:
+        - PolicyName: DecryptEnvVars
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - kms:DescribeKey
+                  - kms:Decrypt
+                Resource: !Sub "arn:aws:kms:${AWS::Region}:${AWS::AccountId}:key/${EncryptionKeyId}"
+        - PolicyName: CloudFormationBuildDeploy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource:
+                  - !Sub "arn:aws:codebuild:${AWS::Region}:${AWS::AccountId}:build/${ApplicationStackName}-build*"
+                  - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group/aws/codebuild/${ApplicationStackName}-build*"
+                  - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/${ApplicationStackName}-build*"
+              - Effect: Allow
+                Action:
+                  - s3:GetBucketAcl
+                  - s3:GetBucketLocation
+                  - s3:GetObject
+                  - s3:GetObjectVersion
+                  - s3:PutObject
+                Resource:
+                  - !Sub "arn:aws:s3:::codepipeline-${AWS::Region}-*"
+                  - !Sub "arn:aws:s3:::${ApplicationBucket}/*"
+              - Effect: Allow
+                Action:
+                  - codebuild:BatchPutTestCases
+                  - codebuild:CreateReport
+                  - codebuild:CreateReportGroup
+                  - codebuild:UpdateReport
+                Resource:
+                  - !Sub "arn:aws:codebuild:${AWS::Region}:${AWS::AccountId}:report-group/${ApplicationStackName}-build*"
+              - Effect: Allow
+                Action:
+                  - cloudformation:Cancel*
+                  - cloudformation:Continue*
+                  - cloudformation:Create*
+                  - cloudformation:Describe*
+                  - cloudformation:Detect*
+                  - cloudformation:Estimate*
+                  - cloudformation:Execute*
+                  - cloudformation:Get*
+                  - cloudformation:List*
+                  - cloudformation:Register*
+                  - cloudformation:Set*
+                  - cloudformation:Signal*
+                  - cloudformation:Stop*
+                  - cloudformation:Tag*
+                  - cloudformation:Untag*
+                  - cloudformation:Update*
+                  - cloudformation:Validate*
+                Resource:
+                  - !Sub "arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:changeSet/*"
+                  - !Sub "arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stackset/*"
+                  - !Sub "arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/${ApplicationStackName}*"
+                  - !Sub "arn:aws:cloudformation:${AWS::Region}:aws:transform/Serverless*"
+              - Effect: Allow
+                Action:
+                  - lambda:AddPermission*
+                  - lambda:RemovePermission*
+                  - lambda:Create*
+                  - lambda:Get*
+                  - lambda:Invoke*
+                  - lambda:List*
+                  - lambda:Publish*
+                  - lambda:Put*
+                  - lambda:Tag*
+                  - lambda:Untag*
+                  - lambda:Update*
+                Resource:
+                  - !Sub "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${ApplicationStackName}"
+              - Effect: Allow
+                Action:
+                  - secretsmanager:Get*
+                Resource:
+                  - !Sub "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${ApplicationStageName}/${ApplicationName}/dockerhub*"
+              - Effect: Allow
+                Action:
+                  - ssm:Get*
+                Resource:
+                  - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${ApplicationName}/${ApplicationStageName}*"
+                  - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${ApplicationStageName}/${ApplicationName}*"
+              - Effect: Allow
+                Action:
+                  - secretsmanager:GetSecret*
+                Resource:
+                  - !Sub "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${ApplicationStageName}/${ApplicationName}*"
+              - Effect: Allow
+                Action:
+                  - iam:Get*
+                  - iam:Pass*
+                Resource:
+                  - "*"
+              - Effect: Allow
+                Action:
+                  - events:*
+                Resource:
+                  - "*"
+              - Effect: Allow
+                Action:
+                  - codepipeline:Get*
+                Resource:
+                  - "*"
+
+  # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-iam-role.html
+  CodePipelineRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Description: "This role is for the CodePipeline execution and deployment"
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - codepipeline.amazonaws.com
+                - s3.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Policies:
+        - PolicyName: PipelineDeployRole
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Action:
+                  - iam:PassRole
+                Resource: "*"
+                Effect: Allow
+                Condition:
+                  StringEqualsIfExists:
+                    iam:PassedToService:
+                      - cloudformation.amazonaws.com
+                      - elasticbeanstalk.amazonaws.com
+                      - ec2.amazonaws.com
+                      - ecs-tasks.amazonaws.com
+              - Action:
+                  - codedeploy:CreateDeployment
+                  - codedeploy:GetApplication
+                  - codedeploy:GetApplicationRevision
+                  - codedeploy:GetDeployment
+                  - codedeploy:GetDeploymentConfig
+                  - codedeploy:RegisterApplicationRevision
+                Resource: "*"
+                Effect: Allow
+              - Action:
+                  - cloudwatch:*
+                  - elasticbeanstalk:DescribeApplications
+                  - elasticbeanstalk:DescribeEnvironments
+                  - sns:*
+                Resource: "*"
+                Effect: Allow
+              - Action:
+                  - s3:CreateBucket
+                  - s3:GetBucketPolicy
+                  - s3:GetBucketVersioning
+                  - s3:GetObject
+                  - s3:GetObjectAcl
+                  - s3:GetObjectVersion
+                  - s3:ListAllMyBuckets
+                  - s3:ListBucket
+                  - s3:PutBucketPolicy
+                  - s3:PutObject
+                  - s3:PutObjectAcl
+                Resource:
+                  - !Sub "arn:aws:s3:::${ApplicationBucket}/*"
+                Effect: Allow
+              - Action:
+                  - lambda:GetFunctionConfiguration
+                  - lambda:InvokeFunction
+                  - lambda:ListFunctions
+                Resource:
+                  - !Sub "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${ApplicationStackName}"
+                Effect: Allow
+              - Action:
+                  - codebuild:BatchGetBuilds
+                  - codebuild:StartBuild
+                Resource: "*"
+                Effect: Allow
+              - Action:
+                  - cloudformation:ValidateTemplate
+                Effect: Allow
+                Resource: "*"
+
+# More info about Outputs: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/outputs-section-structure.html
+Outputs:
+  HelloWorldFunction:
+    Description: 'Affected Function: HelloWorldFunction (ARN)'
+    Value: !GetAtt HelloWorldFunction.Arn
+  AutomaticDeployment:
+    Description: 'CI/CD Integration'
+    Value: !Sub 'pushing to ${RepoOwner}/${RepoName}:${RepoBranch} will deploy to: ${ApplicationStageName}'

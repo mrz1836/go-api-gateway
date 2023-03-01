@@ -1,0 +1,6 @@
+{
+  "ShieldFunction": {
+    "APPLICATION_STAGE_NAME": "docker",
+    "AWS_REGION": "us-east-1"
+  }
+}

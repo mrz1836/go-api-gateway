@@ -1,0 +1,16 @@
+version: 0.2
+phases:
+  install:
+    runtime-versions:
+      python: latest
+    commands:
+      - pip install --upgrade pip
+      - pip install pipenv --user
+      - pipenv install awscli aws-sam-cli --skip-lock
+  build:
+    commands:
+      - |
+        if [ ${CODEBUILD_BUILD_NUMBER} -gt "1" ] ; then
+          echo "Starting to deploy build #${CODEBUILD_BUILD_NUMBER}"
+          make deploy
+        fi
