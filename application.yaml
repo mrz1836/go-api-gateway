@@ -170,7 +170,7 @@ Resources:
       # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-apigateway-domainname.html
       # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-apigateway-basepathmapping.html#cfn-apigateway-basepathmapping-stage
       Domain:
-        DomainName: !Sub "api.${ApplicationDomain}"
+        DomainName: !Sub "api-${ApplicationStageName}.${ApplicationDomain}"
         CertificateArn: !Sub "arn:aws:acm:${AWS::Region}:${AWS::AccountId}:certificate/${ApplicationCertificateId}"
         EndpointConfiguration: EDGE
         Route53:
@@ -180,7 +180,7 @@ Resources:
   HelloWorldFunction:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: !Sub "${ApplicationName}-hello-world"
+      FunctionName: !Sub "${ApplicationStackName}-hello-world"
       Description: "This function will say Hello World!"
       CodeUri: ./cmd/functions/hello_world
       Handler:  hello_world
@@ -204,14 +204,14 @@ Resources:
   HelloWorldFunctionLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: !Sub '/aws/lambda/${HelloWorldFunction}'
+      LogGroupName: !Sub '/aws/lambda/${ApplicationStackName}-hello-world'
       RetentionInDays: 90
 
   # https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-resource-function.html
   PingPongFunction:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: !Sub "${ApplicationName}-ping-pong"
+      FunctionName: !Sub "${ApplicationStackName}-ping-pong"
       Description: "This function will say Ping Pong!"
       CodeUri: ./cmd/functions/ping_pong
       Handler:  ping_pong
@@ -235,7 +235,7 @@ Resources:
   PingPongFunctionLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: !Sub '/aws/lambda/${PingPongFunction}'
+      LogGroupName: !Sub '/aws/lambda/${ApplicationStackName}-ping-pong'
       RetentionInDays: 90
 
   # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-codepipeline-pipeline.html
@@ -391,9 +391,7 @@ Resources:
                   - logs:CreateLogStream
                   - logs:PutLogEvents
                 Resource:
-                  - !Sub "arn:aws:codebuild:${AWS::Region}:${AWS::AccountId}:build/${ApplicationStackName}-build*"
-                  - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group/aws/codebuild/${ApplicationStackName}-build*"
-                  - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/${ApplicationStackName}-build*"
+                  - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${ApplicationStackName}*"
 
   # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-iam-role.html
   CodeBuildRole:
@@ -628,7 +626,7 @@ Resources:
   # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ec2-vpcendpoint.html
   CloudWatchLogsVpcPrivateEndpoint:
     Type: AWS::EC2::VPCEndpoint
-    Condition: EnableLambdaInsights
+    #Condition: EnableLambdaInsights
     Properties:
       PrivateDnsEnabled: 'false'
       VpcEndpointType: Interface
@@ -644,7 +642,7 @@ Resources:
 Outputs:
   APIDomain:
     Description: 'The api is now accessible via:'
-    Value: !Sub "api.${ApplicationDomain}"
+    Value: !Sub "api-${ApplicationStageName}.${ApplicationDomain}"
   HelloWorldFunction:
     Description: 'Function: HelloWorldFunction (ARN)'
     Value: !GetAtt HelloWorldFunction.Arn
