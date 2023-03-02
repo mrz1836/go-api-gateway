@@ -1,7 +1,7 @@
 {
   "body": "eyJ0ZXN0IjoiYm9keSJ9",
   "resource": "/{proxy+}",
-  "path": "/",
+  "path": "/ping/",
   "httpMethod": "GET",
   "isBase64Encoded": true,
   "queryStringParameters": {
@@ -13,7 +13,7 @@
     ]
   },
   "pathParameters": {
-    "proxy": "/"
+    "proxy": "/ping/"
   },
   "stageVariables": {
     "baz": "qux"
@@ -114,7 +114,7 @@
       "userAgent": "Custom User Agent String",
       "user": null
     },
-    "path": "/",
+    "path": "/ping/",
     "resourcePath": "/{proxy+}",
     "httpMethod": "GET",
     "apiId": "1234567890",

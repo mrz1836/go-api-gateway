@@ -136,7 +136,6 @@ Globals:
     MemorySize: 512
     Timeout: 10
     Runtime: go1.x
-    CodeUri: ./cmd/functions/
     KmsKeyArn: !Sub 'arn:aws:kms:${AWS::Region}:${AWS::AccountId}:key/${EncryptionKeyId}'
     Layers:
       - !If
@@ -183,6 +182,7 @@ Resources:
     Properties:
       FunctionName: !Sub "${ApplicationName}-hello-world"
       Description: "This function will say Hello World!"
+      CodeUri: ./cmd/functions/hello_world
       Handler:  hello_world
       Role: !GetAtt LambdaExecutionRole.Arn
       # https://docs.aws.amazon.com/lambda/latest/dg/golang-tracing.html#golang-xray-sdk
@@ -205,6 +205,37 @@ Resources:
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: !Sub '/aws/lambda/${HelloWorldFunction}'
+      RetentionInDays: 90
+
+  # https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-resource-function.html
+  PingPongFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "${ApplicationName}-ping-pong"
+      Description: "This function will say Ping Pong!"
+      CodeUri: ./cmd/functions/ping_pong
+      Handler:  ping_pong
+      Role: !GetAtt LambdaExecutionRole.Arn
+      # https://docs.aws.amazon.com/lambda/latest/dg/golang-tracing.html#golang-xray-sdk
+      Tracing: !If [EnableLambdaInsights, Active, PassThrough ]
+      Policies:
+        - KMSDecryptPolicy:
+            KeyId: !Ref EncryptionKeyId
+      Events:
+        CatchAll:
+          Type: Api
+          Properties:
+            RestApiId: !Ref GoAPI
+            Path: /ping
+            Method: GET
+            #Auth:
+            #  ApiKeyRequired: true
+
+  # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-logs-loggroup.html
+  PingPongFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub '/aws/lambda/${PingPongFunction}'
       RetentionInDays: 90
 
   # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-codepipeline-pipeline.html
@@ -617,6 +648,9 @@ Outputs:
   HelloWorldFunction:
     Description: 'Function: HelloWorldFunction (ARN)'
     Value: !GetAtt HelloWorldFunction.Arn
+  PingPongFunction:
+    Description: 'Function: PingPongFunction (ARN)'
+    Value: !GetAtt PingPongFunction.Arn
   AutomaticDeployment:
     Description: 'CI/CD Integration'
     Value: !Sub 'pushing to ${RepoOwner}/${RepoName}:${RepoBranch} will deploy to: ${ApplicationStageName}'
