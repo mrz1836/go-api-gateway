@@ -67,6 +67,16 @@ ifndef APPLICATION_DOMAIN_NAME
 	override APPLICATION_DOMAIN_NAME="mrz1818.com"
 endif
 
+## VPC name (for identification)
+ifndef VPC_NAME
+	override VPC_NAME="vpc-main"
+endif
+
+## Enable insights (true/false)
+ifndef ENABLE_INSIGHTS
+	override ENABLE_INSIGHTS="false"
+endif
+
 .PHONY: build
 build: ## Build the SAM application
 	@sam build -t application.yaml --debug
@@ -79,7 +89,10 @@ clean: ## Remove previous builds, test cache, and packaged releases
 	@rm -rf $(TEMPLATE_PACKAGED)
 
 .PHONY: deploy
-deploy: ## Build, prepare and deploy
+deploy: ## Build, package and deploy
+	@test VPC_NAME
+	@test ENABLE_INSIGHTS
+	@test APPLICATION_DOMAIN_NAME
 	@$(MAKE) build
 	@$(MAKE) package
 	@SAM_CLI_TELEMETRY=0 sam deploy \
@@ -87,6 +100,7 @@ deploy: ## Build, prepare and deploy
         --stack-name $(APPLICATION_STACK_NAME)  \
         --region $(AWS_REGION) \
         --parameter-overrides ApplicationName=$(APPLICATION_NAME) \
+        InsightsEnabled=$(ENABLE_INSIGHTS) \
         ApplicationStackName=$(APPLICATION_STACK_NAME) \
         ApplicationStageName=$(APPLICATION_STAGE_NAME) \
         ApplicationDomain=$(APPLICATION_DOMAIN_NAME) \
@@ -98,6 +112,9 @@ deploy: ## Build, prepare and deploy
 				domain=$(APPLICATION_DOMAIN_NAME))" \
         ApplicationDockerHubArn="$(shell $(MAKE) aws-param-dockerhub \
                 APPLICATION_NAME=$(APPLICATION_NAME) APPLICATION_STAGE_NAME=$(APPLICATION_STAGE_NAME))" \
+        ApplicationPrivateSubnet1="$(shell $(MAKE) aws-param-vpc-private-subnet-1 vpc_name=$(VPC_NAME))" \
+        ApplicationPrivateSubnet2="$(shell $(MAKE) aws-param-vpc-private-subnet-2 vpc_name=$(VPC_NAME))" \
+        VPCId="$(shell $(MAKE) aws-param-vpc-id vpc_name=$(VPC_NAME))" \
         RepoOwner=$(REPO_OWNER) \
         RepoName=$(REPO_NAME) \
         RepoBranch=$(REPO_BRANCH) \

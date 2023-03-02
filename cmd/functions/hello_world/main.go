@@ -21,6 +21,10 @@ func handler(ctx context.Context, r events.APIGatewayProxyRequest) (events.APIGa
 	// Example using another package
 	log.Println(configuration.Something())
 
+	// Start a segment for X-Ray
+	// var seg *xray.Segment
+	// ctx, seg = xray.BeginSegment(ctx, "marshall-print")
+
 	// Marshal the request
 	j, err := json.Marshal(r)
 	if err != nil {
@@ -29,6 +33,9 @@ func handler(ctx context.Context, r events.APIGatewayProxyRequest) (events.APIGa
 
 	// Log the request data
 	log.Println(string(j))
+
+	// Close the segment for X-Ray
+	// seg.Close(nil)
 
 	// Response
 	return events.APIGatewayProxyResponse{Body: "Hello World!", StatusCode: http.StatusOK}, nil

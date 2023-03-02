@@ -71,6 +71,18 @@ Parameters:
     Description: 'ID of the Amazon SSL Certificate for the ApplicationDomain'
     MinLength: 5
 
+  ApplicationPrivateSubnet1:
+    Type: AWS::SSM::Parameter::Value<String>
+    Description: 'Private subnet on the VPC'
+
+  ApplicationPrivateSubnet2:
+    Type: AWS::SSM::Parameter::Value<String>
+    Description: 'Private subnet on the VPC'
+
+  VPCId:
+    Type: AWS::SSM::Parameter::Value<String>
+    Description: 'vpc id from creating the vpc'
+
   RepoOwner:
     Type: String
     Description: 'the repository owner or username'
@@ -92,6 +104,21 @@ Parameters:
     AllowedPattern: "[A-Za-z0-9-_/]+"
     ConstraintDescription: 'must be a valid branch name'
 
+  # https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/Lambda-Insights-Getting-Started-cloudformation.html
+  InsightsEnabled:
+    Type: String
+    Description: 'Enable Lambda Insights'
+    Default: 'false'
+    AllowedValues:
+      - 'true'
+      - 'false'
+
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/conditions-section-structure.html
+Conditions:
+  EnableLambdaInsights: !Equals
+    - !Ref InsightsEnabled
+    - 'true'
+
 # More info about MetaData: https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-template-publishing-applications-metadata-properties.html
 Metadata:
   AWS::ServerlessRepo::Application:
@@ -103,7 +130,7 @@ Metadata:
     SemanticVersion: '0.0.1'
     SourceCodeUrl: !Sub 'https://github.com/${RepoOwner}/${RepoName}'
 
-# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
+# More info about Globals: https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-specification-template-anatomy-globals.html
 Globals:
   Function:
     MemorySize: 512
@@ -111,6 +138,17 @@ Globals:
     Runtime: go1.x
     CodeUri: ./cmd/functions/
     KmsKeyArn: !Sub 'arn:aws:kms:${AWS::Region}:${AWS::AccountId}:key/${EncryptionKeyId}'
+    Layers:
+      - !If
+        - EnableLambdaInsights
+        - !Sub "arn:aws:lambda:${AWS::Region}:580247275435:layer:LambdaInsightsExtension:21"
+        - !Ref AWS::NoValue
+    VpcConfig:
+      SecurityGroupIds:
+        - !Ref LambdaSecurityGroup
+      SubnetIds:
+        - !Ref ApplicationPrivateSubnet1
+        - !Ref ApplicationPrivateSubnet2
     Architectures:
       - x86_64
     Environment:
@@ -146,15 +184,10 @@ Resources:
       FunctionName: !Sub "${ApplicationName}-hello-world"
       Description: "This function will say Hello World!"
       Handler:  hello_world
-      #VpcConfig:
-        #SecurityGroupIds:
-        #  - !Ref ApplicationSecurityGroup
-        #SubnetIds:
-        #  - !Ref ApplicationPrivateSubnet1
+      Role: !GetAtt LambdaExecutionRole.Arn
+      # https://docs.aws.amazon.com/lambda/latest/dg/golang-tracing.html#golang-xray-sdk
+      Tracing: !If [EnableLambdaInsights, Active, PassThrough ]
       Policies:
-        - AWSCodePipeline_ReadOnlyAccess
-        - AWSLambdaBasicExecutionRole
-        - AWSLambdaVPCAccessExecutionRole
         - KMSDecryptPolicy:
             KeyId: !Ref EncryptionKeyId
       Events:
@@ -288,6 +321,48 @@ Resources:
       TargetPipeline: !Ref CodePipeline
       TargetAction: Source-From-Github
       TargetPipelineVersion: !GetAtt CodePipeline.Version
+
+  # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-iam-role.html
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/CloudWatchLambdaInsightsExecutionRolePolicy'
+      Policies:
+        - PolicyName: allowVPC
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ec2:DescribeNetworkInterfaces
+                  - ec2:CreateNetworkInterface
+                  - ec2:DeleteNetworkInterface
+                  - ec2:DescribeInstances
+                  - ec2:AttachNetworkInterface
+                Resource: "*"
+        - PolicyName: allowLambdaLogs
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource:
+                  - !Sub "arn:aws:codebuild:${AWS::Region}:${AWS::AccountId}:build/${ApplicationStackName}-build*"
+                  - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group/aws/codebuild/${ApplicationStackName}-build*"
+                  - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/${ApplicationStackName}-build*"
 
   # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-iam-role.html
   CodeBuildRole:
@@ -501,6 +576,38 @@ Resources:
                   - cloudformation:ValidateTemplate
                 Effect: Allow
                 Resource: "*"
+
+  # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-ec2-security-group.html
+  LambdaSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: "Security group for lambda functions"
+      VpcId:
+        Ref: VPCId
+      SecurityGroupIngress:
+        - IpProtocol: "tcp"
+          FromPort: 3306
+          ToPort: 3306
+          Description: "example-database-connection"
+          CidrIp: "8.8.8.8/32"
+      SecurityGroupEgress:
+        - CidrIp: "0.0.0.0/0"
+          IpProtocol: "-1"
+
+  # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ec2-vpcendpoint.html
+  CloudWatchLogsVpcPrivateEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Condition: EnableLambdaInsights
+    Properties:
+      PrivateDnsEnabled: 'false'
+      VpcEndpointType: Interface
+      VpcId: !Ref VPCId
+      ServiceName: !Sub com.amazonaws.${AWS::Region}.logs
+      SecurityGroupIds:
+        - !Ref LambdaSecurityGroup
+      SubnetIds:
+        - !Ref ApplicationPrivateSubnet1
+        - !Ref ApplicationPrivateSubnet2
 
 # More info about Outputs: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/outputs-section-structure.html
 Outputs:
