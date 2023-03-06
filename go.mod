@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	github.com/aws/aws-lambda-go v1.37.0
-	github.com/stretchr/testify v1.7.2
+	github.com/stretchr/testify v1.8.2
 )
 
 require (
