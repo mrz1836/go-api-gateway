@@ -97,6 +97,7 @@ deploy: ## Build, package and deploy
 	@$(MAKE) package
 	@SAM_CLI_TELEMETRY=0 sam deploy \
         --s3-bucket "$(APPLICATION_BUCKET)" \
+        --s3-prefix "$(APPLICATION_BUCKET_PREFIX)" \
         --stack-name $(APPLICATION_STACK_NAME)  \
         --region $(AWS_REGION) \
         --parameter-overrides ApplicationName=$(APPLICATION_NAME) \
