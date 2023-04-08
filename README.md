@@ -2,7 +2,7 @@
 > Example using multiple Go functions using the same common library - with integrated CI/CD
 > 
 [![Build](https://github.com/mrz1836/go-api-gateway/workflows/run-go-tests/badge.svg?branch=master&v=1)](https://github.com/mrz1836/go-api-gateway/actions/)
-[![Go](https://img.shields.io/badge/Go-1.20.xx-blue.svg)](https://golang.org/)
+[![Go](https://img.shields.io/badge/Go-1.20.xx-blue.svg?v=1)](https://golang.org/)
 [![codecov](https://codecov.io/gh/mrz1836/go-api-gateway/branch/master/graph/badge.svg?token=C2ZRLM49RV&v=1)](https://codecov.io/gh/mrz1836/go-api-gateway)
 [![Sponsor](https://img.shields.io/badge/sponsor-mrz1836-181717.svg?logo=github&style=flat&v=1)](https://github.com/sponsors/mrz1836)
 [![Donate](https://img.shields.io/badge/donate-bitcoin-ff9900.svg?logo=bitcoin&style=flat&v=1)](https://mrz1818.com/?tab=tips&utm_source=github&utm_medium=sponsor-link&utm_campaign=go-api-gateway&utm_term=go-api-gateway&utm_content=go-api-gateway)
@@ -320,8 +320,8 @@ The most basic way to show your support is to star :star2: the project, or to ra
 You can also support this project by [becoming a sponsor on GitHub](https://github.com/sponsors/mrz1836) :clap:
 or by making a [**bitcoin donation**](https://mrz1818.com/?tab=tips&utm_source=github&utm_medium=sponsor-link&utm_campaign=go-api-gateway&utm_term=go-api-gateway&utm_content=go-api-gateway) to ensure this journey continues indefinitely! :rocket:
 
-[![Stars](https://img.shields.io/github/stars/mrz1836/go-api-gateway?label=Please%20like%20us&style=social&v=2)](https://github.com/mrz1836/go-api-gateway/stargazers)
+[![Stars](https://img.shields.io/github/stars/mrz1836/go-api-gateway?label=Please%20like%20us&style=social&v=1)](https://github.com/mrz1836/go-api-gateway/stargazers)
 
 ## License
 
-[![License](https://img.shields.io/github/license/mrz1836/go-api-gateway.svg?style=flat&v=4)](LICENSE)
+[![License](https://img.shields.io/github/license/mrz1836/go-api-gateway.svg?style=flat&v=1)](LICENSE)
