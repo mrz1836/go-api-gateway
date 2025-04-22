@@ -304,7 +304,7 @@ Resources:
           Credential: !Sub "${ApplicationDockerHubArn}" # Docker credentials are needed to pull the custom image
           CredentialProvider: "SECRETS_MANAGER"
         # Image: aws/codebuild/standard:5.0
-        Image: shogo82148/codebuild-golang:1.20-standard-5.0 # This allows us to use new versions of Go that AWS does not support
+        Image: shogo82148/codebuild-golang:1.23-standard-5.0 # This allows us to use new versions of Go that AWS does not support
         EnvironmentVariables:
           - Name: APPLICATION_NAME
             Type: PLAINTEXT
