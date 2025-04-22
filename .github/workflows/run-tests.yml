@@ -1,13 +1,18 @@
+# Workflow Name: run-go-tests
+# Purpose: Run linter, tests, and upload code coverage for Go projects on pull requests and pushes to any branch
 name: run-go-tests
 
 env:
+  # Explicitly enable Go modules (default in recent Go versions, but good for clarity)
   GO111MODULE: on
 
 on:
   pull_request:
+    # Run the workflow on pull requests to any branch
     branches:
       - "*"
   push:
+    # Run the workflow on direct pushes to any branch
     branches:
       - "*"
 
@@ -15,32 +20,63 @@ jobs:
   test:
     strategy:
       matrix:
-        go-version: [ 1.20.x ]
+        go-version: [ 1.23.x ]
         os: [ ubuntu-latest ]
     runs-on: ${{ matrix.os }}
     steps:
+      # Step 1: Install the specified version of Go
       - name: Install Go
         uses: actions/setup-go@v5
         with:
-          go-version: ${{ matrix.go-version }}
-      - name: Checkout code
+          go-version: ${{ matrix.go-version }} # Install the Go version specified in the matrix
+
+      # Step 2: Check out the latest commit of the PR or push
+      - name: Checkout Code
         uses: actions/checkout@v4
-      - uses: actions/cache@v4
+
+      # Step 3: Cache Go module and build directories to speed up future runs
+      - name: Use Caching
+        uses: actions/cache@v4
         with:
           path: |
-            ~/go/pkg/mod              # Module download cache
-            ~/.cache/go-build         # Build cache (Linux)
-            ~/Library/Caches/go-build # Build cache (Mac)
-            '%LocalAppData%\go-build' # Build cache (Windows)
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+            ~/go/pkg/mod               # Go modules cache
+            ~/.cache/go-build          # Go build artifacts
+          key: ${{ runner.os }}-go-${{ matrix.go-version }}-${{ hashFiles('**/go.mod', '**/go.sum') }}
           restore-keys: |
+            ${{ runner.os }}-go-${{ matrix.go-version }}-
             ${{ runner.os }}-go-
+
+      # Step 4: Ensure go.sum exists to prevent Go toolchain errors
+      - name: Ensure go.sum exists
+        run: |
+          if [ ! -f go.sum ]; then
+            echo "go.sum not found, running 'go mod tidy' to generate it."
+            go mod tidy
+          fi
+
+      # Step 5: Download Go module dependencies (uses cache if available)
+      - name: Download Modules
+        run: go mod download
+
+      # Step 6: Cache golangci-lint analysis results to improve performance
+      - name: Cache golangci-lint cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/golangci-lint
+          key: ${{ runner.os }}-golangci-${{ hashFiles('**/*.go', '.golangci.json') }}
+          restore-keys: |
+            ${{ runner.os }}-golangci-
+
+      # Step 7: Run linter and unit tests
+      # Assumes `make test-ci` runs linter (e.g., golangci-lint) and `go test ./...` with code coverage
       - name: Run linter and tests
         run: make test-ci
-      - name: Code Coverage
+
+      # Step 8: Upload the code coverage report to Codecov for visibility and coverage tracking
+      - name: Update Code Coverage
         uses: codecov/codecov-action@v5.4.2
         with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          flags: unittests
-          fail_ci_if_error: true
-          verbose: true
+          token: ${{ secrets.CODECOV_TOKEN }} # Required for uploading private repo reports
+          flags: unittests                     # Tag this report as part of the unit test suite
+          fail_ci_if_error: true               # Fail the job if the upload fails
+          verbose: true                        # Enable detailed logging

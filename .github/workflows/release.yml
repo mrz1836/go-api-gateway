@@ -1,34 +1,55 @@
-# From: https://goreleaser.com/ci/actions/#usage
+# Workflow Name: release
+# Purpose: Automatically run GoReleaser when a Git tag is pushed to the repository.
 name: release
 
 env:
+  # Ensures Go modules are enabled (default in recent Go versions, but good to be explicit)
   GO111MODULE: on
 
 on:
+  # Trigger this workflow when pushing a tag (e.g., v1.0.0)
   push:
     tags:
       - '*'
 
+# GitHub permissions for this workflow
 permissions:
-  contents: write
+  contents: write # Required to create releases and upload artifacts to GitHub
 
 jobs:
   goreleaser:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest # Use the latest stable Ubuntu runner provided by GitHub
+
     steps:
-      - name: Checkout
+      # Check out the code from the repository
+      - name: Checkout the repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 0 # Required by GoReleaser to generate changelogs and access the full commit history
+
+      # Cache Go modules and build artifacts to speed up the workflow
+      - name: Cache Go modules
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/go-build           # Go build cache
+            ~/go/pkg/mod                # Module download cache
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }} # Unique cache key based on go.sum contents
+          restore-keys: |
+            ${{ runner.os }}-go-        # Fallback key to reuse cache across similar environments
+
+      # Set up the Go environment
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: 1.19 # Issue with 1.20 (error: context not defined)
+          go-version: 1.23              # Specify Go version (consider pinning to the latest stable for production)
+
+      # Run GoReleaser to build and release the project
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v6.3.0
         with:
-          distribution: goreleaser
-          version: latest
-          args: release --rm-dist --debug
+          distribution: goreleaser      # Can also be 'goreleaser-pro' if using a paid version
+          version: latest               # Consider pinning to a specific version to avoid breaking changes
+          args: release --clean --verbose # '--clean' ensures previous builds don’t pollute artifacts; '--verbose' enables detailed logs
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}     # Required for authenticating with GitHub to create releases
