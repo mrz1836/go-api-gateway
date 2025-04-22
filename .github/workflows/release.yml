@@ -1,55 +1,66 @@
 # Workflow Name: release
-# Purpose: Automatically run GoReleaser when a Git tag is pushed to the repository.
+# Purpose: Build & publish releases via GoReleaser whenever a semver tag is pushed.
 name: release
 
 env:
-  # Ensures Go modules are enabled (default in recent Go versions, but good to be explicit)
-  GO111MODULE: on
+  GO111MODULE: on        # explicit, though modern Go enables this by default
 
 on:
-  # Trigger this workflow when pushing a tag (e.g., v1.0.0)
   push:
     tags:
-      - '*'
+      - 'v*'             # run only on tags that start with "v"
 
-# GitHub permissions for this workflow
 permissions:
-  contents: write # Required to create releases and upload artifacts to GitHub
+  contents: write        # upload assets and create the release
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   goreleaser:
-    runs-on: ubuntu-latest # Use the latest stable Ubuntu runner provided by GitHub
+    runs-on: ubuntu-latest
 
     steps:
-      # Check out the code from the repository
-      - name: Checkout the repository
+      # ———————————————————————————————————————————————
+      # 1. Check out full history and tags
+      # ———————————————————————————————————————————————
+      - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # Required by GoReleaser to generate changelogs and access the full commit history
+          fetch-depth: 0          # required for changelog generation
 
-      # Cache Go modules and build artifacts to speed up the workflow
-      - name: Cache Go modules
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cache/go-build           # Go build cache
-            ~/go/pkg/mod                # Module download cache
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }} # Unique cache key based on go.sum contents
-          restore-keys: |
-            ${{ runner.os }}-go-        # Fallback key to reuse cache across similar environments
-
-      # Set up the Go environment
+      # ———————————————————————————————————————————————
+      # 2. Set up Go with a built‑in module and build cache
+      # ———————————————————————————————————————————————
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: 1.23              # Specify Go version (consider pinning to the latest stable for production)
+          go-version-file: go.mod # single source of truth
+          cache: true
+          cache-dependency-path: |
+            **/go.mod
+            **/go.sum
 
-      # Run GoReleaser to build and release the project
-      - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v6.3.0
+      # ———————————————————————————————————————————————
+      # 3. (Optional) Pre‑flight config validation
+      # ———————————————————————————————————————————————
+      - name: GoReleaser config check
+        uses: goreleaser/goreleaser-action@v6
         with:
-          distribution: goreleaser      # Can also be 'goreleaser-pro' if using a paid version
-          version: latest               # Consider pinning to a specific version to avoid breaking changes
-          args: release --clean --verbose # '--clean' ensures previous builds don’t pollute artifacts; '--verbose' enables detailed logs
+          version: v2.0.1         # pin exact or at least major
+          args: check
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}     # Required for authenticating with GitHub to create releases
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # ———————————————————————————————————————————————
+      # 4. Build & publish the release
+      # ———————————————————————————————————————————————
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          version: v2.0.1
+          args: release --clean --verbose
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}   # used only if referenced in .goreleaser.yml
