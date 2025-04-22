@@ -1,6 +1,6 @@
 module go-api-gateway
 
-go 1.23
+go 1.23.8
 
 require (
 	github.com/aws/aws-lambda-go v1.48.0
