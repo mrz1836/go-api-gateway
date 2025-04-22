@@ -1,12 +1,12 @@
 # API Gateway -> Lambda (Go)
 > Example using multiple Go functions using the same common library - with integrated CI/CD
 > 
-[![Build](https://github.com/mrz1836/go-api-gateway/workflows/run-go-tests/badge.svg?branch=master&v=1)](https://github.com/mrz1836/go-api-gateway/actions/)
-[![Release](https://img.shields.io/github/release/mrz1836/go-api-gateway.svg?logo=github&style=flat)](https://github.com/mrz1836/go-api-gateway/releases)
-[![Go](https://img.shields.io/badge/Go-1.23.xx-blue.svg?v=1)](https://golang.org/)
-[![codecov](https://codecov.io/gh/mrz1836/go-api-gateway/branch/master/graph/badge.svg?token=C2ZRLM49RV&v=1)](https://codecov.io/gh/mrz1836/go-api-gateway)
-[![Sponsor](https://img.shields.io/badge/sponsor-mrz1836-181717.svg?logo=github&style=flat&v=1)](https://github.com/sponsors/mrz1836)
-[![Donate](https://img.shields.io/badge/donate-bitcoin-ff9900.svg?logo=bitcoin&style=flat&v=1)](https://mrz1818.com/?tab=tips&utm_source=github&utm_medium=sponsor-link&utm_campaign=go-api-gateway&utm_term=go-api-gateway&utm_content=go-api-gateway)
+[![Build](https://github.com/mrz1836/go-api-gateway/workflows/run-go-tests/badge.svg?branch=master&v=2)](https://github.com/mrz1836/go-api-gateway/actions/)
+[![Release](https://img.shields.io/github/release/mrz1836/go-api-gateway.svg?logo=github&style=flat&v=2)](https://github.com/mrz1836/go-api-gateway/releases)
+[![Go](https://img.shields.io/badge/Go-1.23.xx-blue.svg?v=2)](https://golang.org/)
+[![codecov](https://codecov.io/gh/mrz1836/go-api-gateway/branch/master/graph/badge.svg?token=C2ZRLM49RV&v=2)](https://codecov.io/gh/mrz1836/go-api-gateway)
+[![Sponsor](https://img.shields.io/badge/sponsor-mrz1836-181717.svg?logo=github&style=flat&v=2)](https://github.com/sponsors/mrz1836)
+[![Donate](https://img.shields.io/badge/donate-bitcoin-ff9900.svg?logo=bitcoin&style=flat&v=2)](https://mrz1818.com/?tab=tips&utm_source=github&utm_medium=sponsor-link&utm_campaign=go-api-gateway&utm_term=go-api-gateway&utm_content=go-api-gateway)
 
 <br/>
 
