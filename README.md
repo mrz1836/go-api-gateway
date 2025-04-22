@@ -1,7 +1,7 @@
 # API Gateway -> Lambda (Go)
 > Example using multiple Go functions using the same common library - with integrated CI/CD
-> 
-[![Build](https://github.com/mrz1836/go-api-gateway/workflows/run-go-tests/badge.svg?branch=master&v=2)](https://github.com/mrz1836/go-api-gateway/actions/)
+>
+[![Build Status](https://img.shields.io/github/actions/workflow/status/mrz1836/go-api-gateway/run-tests.yml?branch=master&logo=github&v=2)](https://github.com/mrz1836/go-api-gateway/actions)
 [![Release](https://img.shields.io/github/release/mrz1836/go-api-gateway.svg?logo=github&style=flat&v=2)](https://github.com/mrz1836/go-api-gateway/releases)
 [![Go](https://img.shields.io/badge/Go-1.23.xx-blue.svg?v=2)](https://golang.org/)
 [![codecov](https://codecov.io/gh/mrz1836/go-api-gateway/branch/master/graph/badge.svg?token=C2ZRLM49RV&v=2)](https://codecov.io/gh/mrz1836/go-api-gateway)
