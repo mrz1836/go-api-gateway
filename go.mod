@@ -3,7 +3,7 @@ module go-api-gateway
 go 1.23.8
 
 require (
-	github.com/aws/aws-lambda-go v1.52.0
+	github.com/aws/aws-lambda-go v1.53.0
 	github.com/stretchr/testify v1.11.1
 )
 
