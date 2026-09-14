@@ -26,7 +26,7 @@ jobs:
     strategy:
       # Define a matrix to allow testing on multiple Go versions or operating systems if needed
       matrix:
-        go-version: [1.23.x]           # Go version to test against; can be extended to include other versions
+        go-version: [1.26.x]           # Go version to test against; can be extended to include other versions
         os: [ubuntu-latest]            # Use Ubuntu as the target OS; can be extended to test on Mac or Windows
     runs-on: ${{ matrix.os }}          # Dynamically set the runner OS based on matrix
 
