@@ -7,15 +7,19 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
-      # Check for npm updates at 9am UTC (5am EST)
+      # Check for Go module updates at 10:00 UTC (6am EST)
       time: "10:00"
-    reviewers:
-      - "mrz1836"
+    # Reviewers are now driven by .github/CODEOWNERS (the dependabot `reviewers` option was removed by GitHub in 2025)
     assignees:
       - "mrz1836"
     # Labels must be created first
     labels:
       - "update"
+    # Batch all Go module bumps into a single PR
+    groups:
+      gomod:
+        patterns:
+          - "*"
 
   # Maintain dependencies for GitHub Actions
   - package-ecosystem: "github-actions"
@@ -24,10 +28,14 @@ updates:
     schedule:
       interval: "weekly"
       day: "monday"
-    reviewers:
-      - "mrz1836"
+    # Reviewers are now driven by .github/CODEOWNERS (the dependabot `reviewers` option was removed by GitHub in 2025)
     assignees:
       - "mrz1836"
     labels:
       - "chore"
     open-pull-requests-limit: 10
+    # Batch all GitHub Actions bumps into a single PR
+    groups:
+      github-actions:
+        patterns:
+          - "*"
