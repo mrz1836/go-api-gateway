@@ -26,7 +26,7 @@ jobs:
       # 1. Check out full history and tags
       # ———————————————————————————————————————————————
       - name: Checkout repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@v7.0.1
         with:
           fetch-depth: 0          # required for changelog generation
 
@@ -34,7 +34,7 @@ jobs:
       # 2. Set up Go with a built‑in module and build cache
       # ———————————————————————————————————————————————
       - name: Set up Go
-        uses: actions/setup-go@v7
+        uses: actions/setup-go@v7.0.0
         with:
           go-version-file: go.mod # single source of truth
           cache: true
@@ -46,9 +46,9 @@ jobs:
       # 3. (Optional) Pre‑flight config validation
       # ———————————————————————————————————————————————
       - name: GoReleaser config check
-        uses: goreleaser/goreleaser-action@v7
+        uses: goreleaser/goreleaser-action@v7.2.3
         with:
-          version: v2.0.1         # pin exact or at least major
+          version: v2.18.1        # pin exact or at least major
           args: check
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -57,9 +57,9 @@ jobs:
       # 4. Build & publish the release
       # ———————————————————————————————————————————————
       - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v7
+        uses: goreleaser/goreleaser-action@v7.2.3
         with:
-          version: v2.0.1
+          version: v2.18.1
           args: release --clean --verbose
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
