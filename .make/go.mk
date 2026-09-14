@@ -111,7 +111,7 @@ lint: ## Run the golangci-lint application (install if not found)
 			GOPATH=$$(go env GOPATH); \
 			if [ -z "$$GOPATH" ]; then GOPATH=$$HOME/go; fi; \
 			echo "Installation path: $$GOPATH/bin"; \
-			curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $$GOPATH/bin $(GOLANGCI_LINT_VERSION); \
+			curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/$(GOLANGCI_LINT_VERSION)/install.sh | sh -s -- -b $$GOPATH/bin $(GOLANGCI_LINT_VERSION); \
 		fi; \
 	fi; \
 	if [ "$(TRAVIS)" != "" ]; then \
