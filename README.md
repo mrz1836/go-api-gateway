@@ -3,7 +3,7 @@
 >
 [![Build Status](https://img.shields.io/github/actions/workflow/status/mrz1836/go-api-gateway/run-tests.yml?branch=master&logo=github&v=2)](https://github.com/mrz1836/go-api-gateway/actions)
 [![Release](https://img.shields.io/github/release/mrz1836/go-api-gateway.svg?logo=github&style=flat&v=2)](https://github.com/mrz1836/go-api-gateway/releases)
-[![Go](https://img.shields.io/badge/Go-1.23.xx-blue.svg?v=2)](https://golang.org/)
+[![Go](https://img.shields.io/badge/Go-1.26.xx-blue.svg?v=2)](https://golang.org/)
 [![codecov](https://codecov.io/gh/mrz1836/go-api-gateway/branch/master/graph/badge.svg?token=C2ZRLM49RV&v=2)](https://codecov.io/gh/mrz1836/go-api-gateway)
 [![Sponsor](https://img.shields.io/badge/sponsor-mrz1836-181717.svg?logo=github&style=flat&v=2)](https://github.com/sponsors/mrz1836)
 [![Donate](https://img.shields.io/badge/donate-bitcoin-ff9900.svg?logo=bitcoin&style=flat&v=2)](https://mrz1818.com/?tab=tips&utm_source=github&utm_medium=sponsor-link&utm_campaign=go-api-gateway&utm_term=go-api-gateway&utm_content=go-api-gateway)
@@ -285,7 +285,7 @@ vet                             Run the Go vet application
 
 ## Examples & Tests
 All unit tests run via [GitHub Actions](https://github.com/mrz1836/go-api-gateway/actions) and
-use [Go version 1.23.x](https://golang.org/doc/go1.23). View the [configuration file](.github/workflows/run-tests.yml).
+use [Go version 1.26.x](https://golang.org/doc/go1.26). View the [configuration file](.github/workflows/run-tests.yml).
 
 Run all tests (including integration tests)
 ```shell script
